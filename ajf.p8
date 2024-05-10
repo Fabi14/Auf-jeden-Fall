@@ -1,5 +1,39 @@
 pico-8 cartridge // http://www.pico-8.com
 version 42
+__lua__
+
+create_saw = function()
+    local saw = {x =64,y=100}
+    saw.draw = function(saw)
+        rectfill(saw.x - 16, saw.y - 8, saw.x + 16, saw.y + 8, 8)
+    end
+    return saw
+end
+
+-->8
+--init
+_init = function ()
+    saw = create_saw()
+end
+-->8
+--draw
+
+_draw = function()
+    cls(0)
+    saw:draw()
+end
+-->8
+--update
+
+_update = function()
+    if btn(4, 0) and not btn(4, 1) then
+        saw.x += 1
+    end
+    if not btn(4, 0) and btn(4, 1) then
+        saw.x -= 1
+    end
+end
+
 __gfx__
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
