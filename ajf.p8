@@ -5,7 +5,8 @@ __lua__
 create_saw = function()
     local saw = {x =64,y=100}
     saw.draw = function(saw)
-        rectfill(saw.x - 16, saw.y - 8, saw.x + 16, saw.y + 8, 8)
+        --rectfill(saw.x - 16, saw.y - 8, saw.x + 16, saw.y + 8, 8)
+        spr(1,saw.x - 16, saw.y - 8, 8, 2)
     end
     return saw
 end
