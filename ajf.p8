@@ -200,8 +200,6 @@ _update = function()
         if( tree.a<0.25)tree.a+=0.001
     elseif mode == mode_iso then
         foreach_go(go_iso,update)
-        debug = go_iso.player.tree.x 
-        debug =debug .. go_iso.player2.tree.x 
         if go_iso.player.tree == go_iso.player2.tree then
            mode = mode_2d_saw 
         end
