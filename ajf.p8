@@ -15,6 +15,12 @@ vec = function(x,y)
     mt ={__add = function (a,b)
         return vec(a.x+b.x,a.y+b.y)
     end,
+    __sub = function (a,b)
+        return vec(a.x-b.x,a.y-b.y)
+    end,
+    __mul = function (a,b)
+        return vec(a.x*b.x,a.y*b.y)
+    end,
     __eq = function (a,b)
         return a.x==b.x and a.y==b.y
     end
@@ -53,17 +59,19 @@ map_collide = function (p1,p2,p)
         if((fget(mget(p2.x/8,p2.y/8))&flag)==flag) return true,vec(flr(p2.x/8),flr(p2.y/8))
         return false,p.tree
     end
-    is_at_tree,p.tree = c(2)
-    debug = p.tree
+    is_at_tree,ptree = c(2)
+    debug = ptree
     if c(1) then
         sfx(0)
         return true    
     elseif is_at_tree then
        create_ui_text("p_wait"..p.nr,"waiting for player",p1+vec(8,0)) 
+       p.tree = ptree
     --    mode = mode_2d_saw 
        return false
     end 
     create_ui_text("p_wait"..p.nr,"",p1) 
+    p.tree = vec(p.nr,p.nr)
     return false
 end
 
@@ -84,13 +92,13 @@ create_player = function (x,y,sprite,t,p_nr)
     return p
 end
 
-camera_toPlayer = function(player)
-    luc = player.p + vec(-64,-64)
+camera_toplayer = function(player)
+    luc = player + vec(-64,-64)
     local x = luc.x>93*8 and luc.x or 93*8
     local x = x<128*8-128 and x or 128*8-128
     local y = luc.y>0 and luc.y or 0
     local y = y<21*8-128 and y or 21*8-128
-    camera(x ,y)
+    camera(flr(x+0.5), flr(y+0.5))
 end
 
 -->8
@@ -177,7 +185,7 @@ end
 _draw = function()
     cls(0)
     if mode == mode_iso then
-        camera_toPlayer(go_iso.player)
+        camera_toplayer(go_iso.player.p + (go_iso.player2.p - go_iso.player.p)*vec(0.5,0.5) )
         map(0,0,0,0)
         foreach_go(go_iso,draw)
         --iso_tree
