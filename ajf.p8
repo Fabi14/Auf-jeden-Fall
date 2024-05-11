@@ -146,8 +146,8 @@ _init = function ()
     mode = mode_iso
     saw,tree = create_saw(),create_tree()
 
-    go_iso ={player = create_player(120*8,20*8,68,20)}
-    go_iso.player2 = create_player(118*8,20*8,84,20,1)
+    go_iso ={player = create_player(122*8,5*8,68,20)}
+    go_iso.player2 = create_player(123*8,5*8,84,20,1)
     tree_positions = {}
 
     -- map x93 y 0  -> 127 / 20
