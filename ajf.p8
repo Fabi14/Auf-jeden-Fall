@@ -203,7 +203,7 @@ _draw = function()
     end
 
 
-    print(debug,0,0,8)
+    -- print(debug,0,0,8)
 end
 -->8
 --update
