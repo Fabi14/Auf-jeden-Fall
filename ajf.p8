@@ -183,7 +183,8 @@ _draw = function()
         tree:draw()
         saw:draw()
         if mode == mode_2d_saw then
-            circfill(63,95,5,4)
+            spr(62,56,95)
+            spr(63,64,95)
         end
     end
 
