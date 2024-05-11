@@ -86,7 +86,11 @@ end
 
 camera_toPlayer = function(player)
     luc = player.p + vec(-64,-64)
-    camera(luc.x>0 and luc.x or 0 ,luc.y>17*8 and luc.y or 17*8)
+    local x = luc.x>93*8 and luc.x or 93*8
+    local x = x<128*8-128 and x or 128*8-128
+    local y = luc.y>0 and luc.y or 0
+    local y = y<21*8-128 and y or 21*8-128
+    camera(x ,y)
 end
 
 -->8
@@ -120,7 +124,7 @@ create_saw = function()
     return saw
 end
 
-create_tree = function ()
+create_tree = function()
     local tree={a=0}
     tree.draw = function (tree)
         rotation_point={x=68,y=103}
@@ -142,9 +146,18 @@ _init = function ()
     mode = mode_iso
     saw,tree = create_saw(),create_tree()
 
-    go_iso ={player = create_player(5*8,20*8,68,20)}
-    go_iso.player2 = create_player(7*8,20*8,84,20,1)
-    tree_positions ={vec(4,22),vec(6,19),vec(12,22)}
+    go_iso ={player = create_player(120*8,20*8,68,20)}
+    go_iso.player2 = create_player(118*8,20*8,84,20,1)
+    tree_positions = {}
+
+    -- map x93 y 0  -> 127 / 20
+    for y = 0,20 do 
+        for x = 93, 127 do 
+            if mget(x,y) == 88 then
+                add(tree_positions,vec(x,y))
+            end
+        end
+    end
 end
 -->8
 --draw
@@ -170,7 +183,7 @@ _draw = function()
         --iso_tree
         pal(11,0)
         foreach(tree_positions,function(v)
-            spr(sprites.iso_tree,v.x*8,v.y*8)
+            spr(sprites.iso_tree,v.x*8,(v.y-1)*8)
         end) 
         --iso haus
         spr(73,14*8,22*8)
@@ -181,7 +194,7 @@ _draw = function()
         camera(0,0)
     else
         map(0,0,0,0,16,16)
-        tree:draw()
+        tree:draw() 
         saw:draw()
         if mode == mode_2d_saw then
             spr(62,56,95)
@@ -200,11 +213,20 @@ _update = function()
         saw:update()
     elseif mode == mode_2d_falling then
         if( tree.a<0.25)tree.a+=0.001
+        if(tree.a>=0.25) mode = mode_iso 
     elseif mode == mode_iso then
         foreach_go(go_iso,update)
         if go_iso.player.tree.x == go_iso.player2.tree.x and go_iso.player.tree.y == go_iso.player2.tree.y then
            mode = mode_2d_saw 
+            del(tree_positions, go_iso.player.tree)
+            -- for i,tree in pairs(tree_positions) do
+            --     if tree.x == go_iso.player.tree.x and tree.y == go_iso.player.tree.y then
+            --         tree_positions[i]=nil
+            --   end
+            -- end
+        
         end
+        
     end
 end
 
