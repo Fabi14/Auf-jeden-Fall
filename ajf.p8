@@ -186,9 +186,8 @@ _draw = function()
             spr(sprites.iso_tree,v.x*8,(v.y-1)*8)
         end) 
         --iso haus
-        spr(73,14*8,22*8)
-        spr(74,15*8,22*8)
-        spr(75,16*8,22*8)
+        spr(192,122*8,2*8)
+        spr(193,123*8,2*8)
 
         foreach_go(g_ui,draw)
         camera(0,0)
