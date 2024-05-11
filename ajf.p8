@@ -203,7 +203,7 @@ _draw = function()
         map(0,0,0,0,16,16)
         tree:draw() 
         saw:draw()
-        if mode == mode_2d_saw then
+        if mode == mode_2d_saw then -- runder Abschnitt über Säge
             spr(62,56,95)
             spr(63,64,95)
         end
@@ -214,6 +214,19 @@ _draw = function()
 end
 -->8
 --update
+contains = function (tbl,val)
+    for _, v in pairs(tbl) do 
+       if v ==val then return true end
+    end
+    return false    
+end
+
+player_at_same_tree = function ()
+    if contains(tree_positions, go_iso.player.tree) then
+        return go_iso.player.tree.x == go_iso.player2.tree.x and go_iso.player.tree.y == go_iso.player2.tree.y
+    end
+    return false
+end
 
 _update = function()
     if mode == mode_2d_saw then
@@ -223,15 +236,9 @@ _update = function()
         if(tree.a>=0.25) mode = mode_iso 
     elseif mode == mode_iso then
         foreach_go(go_iso,update)
-        if go_iso.player.tree.x == go_iso.player2.tree.x and go_iso.player.tree.y == go_iso.player2.tree.y then
+        if player_at_same_tree() then
            mode = mode_2d_saw 
             del(tree_positions, go_iso.player.tree)
-            -- for i,tree in pairs(tree_positions) do
-            --     if tree.x == go_iso.player.tree.x and tree.y == go_iso.player.tree.y then
-            --         tree_positions[i]=nil
-            --   end
-            -- end
-        
         end
         
     end
