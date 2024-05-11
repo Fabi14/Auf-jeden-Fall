@@ -2,17 +2,26 @@ pico-8 cartridge // http://www.pico-8.com
 version 42
 __lua__
 debug = ""
-mode_2d=0
-mode_iso=1
-
+mode_2d_saw=0
+mode_2d_falling=1
+mode_iso=2
+vec = function(x,y)
+    local v ={}
+    v.x=x or 0
+    v.y=y or 0
+    mt ={__add = function (a,b)
+        return vec(a.x+b.x,a.y+b.y)
+    end}
+    setmetatable(v,mt)
+    return v
+end
 -->8
 --saw/ tree
 create_saw = function()
-    local saw = {x=64,y=100,dx=0}
+    local saw = {p=vec(64,108),dx=0}
     saw.draw = function(saw)
-        spr(1,saw.x - 4*8, saw.y - 8, 8, 2)
+        spr(1,saw.p.x - 4*8, saw.p.y - 8, 8, 2)
     end
-
     saw.update = function (saw)
         if btn(4, 0) and not btn(4, 1) then
             if(saw.dx<0) saw.dx*=-1
@@ -23,23 +32,33 @@ create_saw = function()
         elseif btn(4, 0) and btn(4, 1) then
             saw.dx-=0.3*saw.dx
         end
-        saw.x += saw.dx*0.1
-        if saw.x < 50 or saw.x >78 then
+        saw.p += vec(saw.dx*0.1,-saw.dx*saw.dx*0.0001)
+        if saw.p.x < 50 then
+            saw.p.x =50
+            saw.dx = 0
+        elseif saw.p.x >78 then
+            saw.p.x =78
             saw.dx = 0
         end
+        if(saw.p.y <102)mode = mode_2d_falling
+
     end
     return saw
 end
 
 create_tree = function ()
-    local tree={
-        p1={x=0,y=0},
-        p2={x=0,y=0},
-    }
-    tree.draw = function ()
-        for i=0,32 do
-            tline(48+i,103,48+i,30,17+i/8,12,0,-1/8)
+    local tree={a=0}
+    tree.draw = function (tree)
+        rotation_point={x=68,y=103}
+        a=tree.a
+        for i=0,-20,-0.25 do
+            tline(68+i*cos(-a),103+i*sin(-a),68+i*cos(-a) + 80*cos(-a+0.25),103+i*sin(-a) +80*sin(-a+0.25) ,17+(20+i)/8,12,0,-1/8)
+
         end
+        for i=0,12,0.25 do
+            tline(68+i*cos(-a),103+i*sin(-a),68+i*cos(-a)+ 80*cos(-a+0.25),103+i*sin(-a)+80*sin(-a+0.25),17+(20+i)/8,12,0,-1/8)
+        end
+        pset(rotation_point.x,rotation_point.y,8)
     end
     return tree
 end
@@ -47,9 +66,8 @@ end
 -->8
 --init
 _init = function ()
-    mode = mode_2d
-    saw = create_saw()
-    tree = create_tree()
+    mode = mode_2d_saw
+    saw,tree = create_saw(),create_tree()
 end
 -->8
 --draw
@@ -59,14 +77,19 @@ _draw = function()
     map(0,0,0,0,16,16)
     tree:draw()
     saw:draw()
+    if mode == mode_2d_saw then
+        circfill(63,95,5,4)
+    end
     print(debug,0,0)
 end
 -->8
 --update
 
 _update = function()
-    if mode == mode_2d then
+    if mode == mode_2d_saw then
         saw:update()
+    elseif mode == mode_2d_falling then
+        if( tree.a<0.25)tree.a+=0.001
     end
 end
 
