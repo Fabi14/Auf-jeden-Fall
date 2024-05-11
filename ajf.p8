@@ -2,7 +2,7 @@ pico-8 cartridge // http://www.pico-8.com
 version 42
 __lua__
 debug = ""
-sprites={iso_tree =72}
+sprites={iso_tree =72,wood = 100,wood_small = 101}
 color={text=8}
 
 mode_2d_saw=0
@@ -109,24 +109,27 @@ create_saw = function()
         spr(1,saw.p.x - 4*8, saw.p.y - 8, 8, 2)
     end
     saw.update = function (saw)
-        if btn(4, 0) and not btn(4, 1) then
-            if(saw.dx<0) saw.dx*=-1
-            saw.dx += 0.05
-        elseif not btn(4, 0) and btn(4, 1) then
-            if(saw.dx>0) saw.dx*=-1
-            saw.dx -= 0.05
-        elseif btn(4, 0) and btn(4, 1) then
-            saw.dx-=0.3*saw.dx
-        end
-        saw.p += vec(saw.dx*0.1,-saw.dx*saw.dx*0.0001)
-        if saw.p.x < 50 then
-            saw.p.x =50
-            saw.dx = 0
-        elseif saw.p.x >78 then
-            saw.p.x =78
-            saw.dx = 0
-        end
-        if(saw.p.y <102)mode = mode_2d_falling
+        mode = mode_2d_falling
+        return
+
+        -- if btn(4, 0) and not btn(4, 1) then
+        --     if(saw.dx<0) saw.dx*=-1
+        --     saw.dx += 0.05
+        -- elseif not btn(4, 0) and btn(4, 1) then
+        --     if(saw.dx>0) saw.dx*=-1
+        --     saw.dx -= 0.05
+        -- elseif btn(4, 0) and btn(4, 1) then
+        --     saw.dx-=0.3*saw.dx
+        -- end
+        -- saw.p += vec(saw.dx*0.1,-saw.dx*saw.dx*0.0001)
+        -- if saw.p.x < 50 then
+        --     saw.p.x =50
+        --     saw.dx = 0
+        -- elseif saw.p.x >78 then
+        --     saw.p.x =78
+        --     saw.dx = 0
+        -- end
+        -- if(saw.p.y <102)mode = mode_2d_falling
 
     end
     return saw
@@ -138,10 +141,18 @@ create_tree = function()
         rotation_point={x=68,y=103}
         a=tree.a
         for i=0,-20,-0.25 do
-            tline(68+i*cos(-a),103+i*sin(-a),68+i*cos(-a) + 80*cos(-a+0.25),103+i*sin(-a) +80*sin(-a+0.25) ,17+(20+i)/8,12,0,-1/8)
+            if a<0.125 then
+                tline(68+i*cos(-a),103+i*sin(-a),68+i*cos(-a) + 80*cos(-a+0.25),103+i*sin(-a) +80*sin(-a+0.25) ,17+(20+i)/8,12,0,-1/8/cos(-a))
+            else
+                tline(68+i*cos(-a),103+i*sin(-a),68+i*cos(-a) + 80*cos(-a+0.25),103+i*sin(-a) +80*sin(-a+0.25) ,17+(20+i)/8,12,0,-1/8/sin(-a))
+            end
         end
         for i=0,12,0.25 do
-            tline(68+i*cos(-a),103+i*sin(-a),68+i*cos(-a)+ 80*cos(-a+0.25),103+i*sin(-a)+80*sin(-a+0.25),17+(20+i)/8,12,0,-1/8)
+            if a<0.125 then
+            tline(68+i*cos(-a),103+i*sin(-a),68+i*cos(-a)+ 80*cos(-a+0.25),103+i*sin(-a)+80*sin(-a+0.25),17+(20+i)/8,12,0,-1/8/cos(-a))
+            else
+                tline(68+i*cos(-a),103+i*sin(-a),68+i*cos(-a)+ 80*cos(-a+0.25),103+i*sin(-a)+80*sin(-a+0.25),17+(20+i)/8,12,0,-1/8/sin(-a))
+            end
         end
         pset(rotation_point.x,rotation_point.y,8)
     end
@@ -151,13 +162,14 @@ end
 -->8
 --init
 _init = function ()
+    srand(time)
     mode = mode_iso
     saw,tree = create_saw(),create_tree()
 
     go_iso ={player = create_player(122*8,5*8,68,20)}
     go_iso.player2 = create_player(123*8,5*8,84,20,1)
     tree_positions = {}
-
+    wood_positions ={}
     -- map x93 y 0  -> 127 / 20
     for y = 0,20 do 
         for x = 93, 127 do 
@@ -193,6 +205,9 @@ _draw = function()
         foreach(tree_positions,function(v)
             spr(sprites.iso_tree,v.x*8,(v.y-1)*8)
         end) 
+        foreach(wood_positions,function(v)
+            spr(sprites.wood,v.x*8,(v.y-1)*8)
+        end) 
         --iso haus
         spr(192,122*8,2*8)
         spr(193,123*8,2*8)
@@ -216,7 +231,7 @@ end
 --update
 contains = function (tbl,val)
     for _, v in pairs(tbl) do 
-       if v ==val then return true end
+       if v.x == val.x and v.y == val.y then return true end
     end
     return false    
 end
@@ -232,13 +247,20 @@ _update = function()
     if mode == mode_2d_saw then
         saw:update()
     elseif mode == mode_2d_falling then
-        if( tree.a<0.25)tree.a+=0.001
-        if(tree.a>=0.25) mode = mode_iso 
+        if tree.a<0.25 then 
+            tree.a+=0.001
+        else
+            mode = mode_iso 
+            tree.a=0
+        end
     elseif mode == mode_iso then
         foreach_go(go_iso,update)
         if player_at_same_tree() then
            mode = mode_2d_saw 
             del(tree_positions, go_iso.player.tree)
+            add(wood_positions,go_iso.player.tree +vec(rnd(6)-3,rnd(6)-3))
+            add(wood_positions,go_iso.player.tree +vec(rnd(6)-3,rnd(6)-3))
+            add(wood_positions,go_iso.player.tree +vec(rnd(6)-3,rnd(6)-3))
         end
         
     end
