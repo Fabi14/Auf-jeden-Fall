@@ -3,7 +3,7 @@ version 42
 __lua__
 debug = ""
 sprites={iso_tree =72}
-
+color={text=8}
 
 mode_2d_saw=0
 mode_2d_falling=1
@@ -14,10 +14,27 @@ vec = function(x,y)
     v.y=y or 0
     mt ={__add = function (a,b)
         return vec(a.x+b.x,a.y+b.y)
-    end}
+    end,
+    __eq = function (a,b)
+        return a.x==b.x and a.y==b.y
+    end
+}
     setmetatable(v,mt)
     return v
 end
+-->8
+--ui
+g_ui ={}
+create_ui_text = function(name,text,pos)
+    local ui = {p=pos}
+    ui.text =text
+    ui.draw = function (ui)
+        print(ui.text,ui.p.x,ui.p.y,color.text)
+    end
+    g_ui[name]=ui
+end
+
+
 -->8
 --iso
 create_game_object = function (x,y,sprite,t)
@@ -31,29 +48,33 @@ create_game_object = function (x,y,sprite,t)
     return go
 end
 
-map_collide = function (p1,p2)
+map_collide = function (p1,p2,p)
     c=function (flag)
-        return (fget(mget(p1.x/8,p1.y/8))&flag)==flag or(fget(mget(p2.x/8,p2.y/8))&flag)==flag
+        return (fget(mget(p1.x/8,p1.y/8))&flag)==flag,vec(flr(p1.x/8),flr(p1.y/8)) or(fget(mget(p2.x/8,p2.y/8))&flag)==flag,vec(flr(p2.x/8),flr(p2.y/8))
     end
-
+    is_at_tree,p.tree = c(2)
+    debug = p.tree
     if c(1) then
         return true    
-    elseif c(2) then
-       mode = mode_2d_saw 
+    elseif is_at_tree then
+       create_ui_text("p_wait"..p.nr,"waiting for player",p1+vec(8,0)) 
+    --    mode = mode_2d_saw 
        return false
     end 
+    create_ui_text("p_wait"..p.nr,"",p1) 
     return false
 end
 
 create_player = function (x,y,sprite,t,p_nr)
     local p =create_game_object(x,y,sprite,t)
-    p_nr = p_nr or 0
+    p.nr = p_nr or 0
+    p.tree=vec(p_nr,p_nr)
     p.update = function ()
-        if(btn(0,p_nr)and not map_collide(p.p + vec(-1,0),p.p + vec(-1,7))) p.p.x -=1
-        if(btn(1,p_nr) and not map_collide(p.p+ vec(8,0),p.p+ vec(8,7))) p.p.x +=1
-        if(btn(2,p_nr) and not map_collide(p.p+ vec(0,-1),p.p+ vec(7,-1))) p.p.y -=1
-        if(btn(3,p_nr) and not map_collide(p.p+ vec(0,8),p.p+ vec(7,8))) p.p.y +=1
-        if btn(0,p_nr) or btn(1,p_nr) or btn(2,p_nr) or btn(3,p_nr) then
+        if(btn(0,p.nr)and not map_collide(p.p + vec(-1,0),p.p + vec(-1,7),p)) p.p.x -=1
+        if(btn(1,p.nr) and not map_collide(p.p+ vec(8,0),p.p+ vec(8,7),p)) p.p.x +=1
+        if(btn(2,p.nr) and not map_collide(p.p+ vec(0,-1),p.p+ vec(7,-1),p)) p.p.y -=1
+        if(btn(3,p.nr) and not map_collide(p.p+ vec(0,8),p.p+ vec(7,8),p)) p.p.y +=1
+        if btn(0,p.nr) or btn(1,p.nr) or btn(2,p.nr) or btn(3,p.nr) then
             p.timer+=1
             p.timer = p.timer>p.timer_max and 0 or p.timer
         end
@@ -151,7 +172,7 @@ _draw = function()
         foreach(tree_positions,function(v)
             spr(sprites.iso_tree,v.x*8,v.y*8)
         end) 
-       -- spr(sprites.iso_tree,tree_positions[0].x*8,tree_positions[0].y*8)
+        foreach_go(g_ui,draw)
         camera(0,0)
     else
         map(0,0,0,0,16,16)
@@ -175,6 +196,11 @@ _update = function()
         if( tree.a<0.25)tree.a+=0.001
     elseif mode == mode_iso then
         foreach_go(go_iso,update)
+        debug = go_iso.player.tree.x 
+        debug =debug .. go_iso.player2.tree.x 
+        if go_iso.player.tree == go_iso.player2.tree then
+           mode = mode_2d_saw 
+        end
     end
 end
 
