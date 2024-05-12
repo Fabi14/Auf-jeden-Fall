@@ -2,7 +2,7 @@ pico-8 cartridge // http://www.pico-8.com
 version 42
 __lua__
 debug = ""
-sprites={iso_tree =84,tree_pos = 100,wood = 98,wood_small = 99,wood_cutted =99}
+sprites={iso_tree =84,tree_pos = 100,wood = 98,wood_small = 99,wood_cutted =104}
 color={text=8}
 
 mode_2d_saw=0
@@ -134,7 +134,7 @@ create_player = function (x,y,sprite,t,p_nr)
     local stand_on_wood = function (pos)
         return find(wood_positions,pos,function(wood,player)
             local dist_square = len_sqr(wood.p - player)
-            return dist_square<32
+            return dist_square < 128
         end)
     end
 
@@ -148,7 +148,7 @@ create_player = function (x,y,sprite,t,p_nr)
         -- debug = "draw_special_animation wood?"
         if player.carrys_wood then
             spr(player.s+(player.timer>player.timer_max*0.5 and 2 or 0),player.p.x,player.p.y,2,2)
-            spr(99,player.p.x,player.p.y+6)
+            spr(p.carrys_wood_sprite,player.p.x,player.p.y+6)
             -- debug = debug.."ja"
         else
             spr(player.s+(player.timer>player.timer_max*0.5 and 2 or 0),player.p.x,player.p.y,2,2)
@@ -306,8 +306,8 @@ _draw = function()
         big_tree:draw() 
         saw:draw()
         if mode == mode_2d_saw then -- runder Abschnitt れもber Sれさge
-            spr(62,56,95)
-            spr(63,64,95)
+            spr(32,56,95)
+            spr(33,64,95)
         end
     end
 
