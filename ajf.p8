@@ -5,6 +5,17 @@ debug = ""
 sprites={iso_tree =84,tree_pos = 100,wood = 98,wood_small = 99,wood_cutted =104}
 color={text=0}
 
+sounds = {p1_walk = 58, p2_walk = 62, wood_pickup_p1 = 54,
+wood_drop_p1 = 55,
+wood_pickup_p2 = 56,
+wood_drop_p2 = 57,
+collision = 0,
+saw_p1 = 60,
+saw_p1 = 61,
+wood_house = 9}
+
+single_player_mode = true
+
 mode_2d_saw=0
 mode_2d_falling=1
 mode_iso=2
@@ -117,7 +128,8 @@ create_wood = function (v,sprite)
             w.transforming +=0.1
         end
         if (w.transforming >5) w.s = sprites.wood_cutted
-        if w.p.x > 120*8 and w.p.y < 6*8 and w.s ==  sprites.wood_cutted then -- haus
+        if w.p.x > 120*8 and w.p.y < 6*8 and w.s ==  sprites.wood_cutted  and not w.is_burning then -- haus
+            sfx(sounds.wood_house)
             w.is_burning = true
         end
 
@@ -203,6 +215,13 @@ create_player = function (x,y,sprite,t,p_nr)
             spr(p.carrys_wood_sprite,player.p.x,player.p.y+6)
         else
             spr(player.s+(player.timer>player.timer_max*0.5 and 2 or 0),player.p.x,player.p.y,2,2)
+            -- if(player.timer==player.timer_max*0.5) then
+            -- if p.nr == 0 then 
+            --     sfx(sounds.p1_walk+(player.timer>=player.timer_max*0.5 and 2 or 0))
+            -- else
+            --     sfx(sounds.p2_walk+(player.timer>=player.timer_max*0.5 and 2 or 0))
+            -- end
+        -- end
         end
     end
 
@@ -223,9 +242,19 @@ create_player = function (x,y,sprite,t,p_nr)
                 del(wood_positions,wood_index)
                 p.carrys_wood = true
                 p.carrys_wood_sprite = wood_index.s
+                if p.nr == 0 then 
+                    sfx(sounds.wood_pickup_p1)
+                else
+                    sfx(sounds.wood_pickup_p2)
+                end
             elseif p.carrys_wood then
                 add(wood_positions,create_wood(vec(p.p.x,p.p.y),p.carrys_wood_sprite ))
                 p.carrys_wood = false
+                if p.nr == 0 then 
+                    sfx(sounds.wood_drop_p1)
+                else
+                    sfx(sounds.wood_drop_p2)
+                end
             end
         end
     
@@ -250,13 +279,23 @@ create_saw = function()
         spr(1,saw.p.x - 4*8, saw.p.y - 8, 8, 2)
     end
     saw.update = function (saw)
-        if btn(4, 0) and not btn(4, 1) then
-            if(saw.dx<0) saw.dx*=-1
+        local second_button = btn(4, 1)
+        if single_player_mode then
+            second_button = btn(5, 0)
+        end
+        if btn(4, 0) and not second_button then
+            if saw.dx<0 then 
+                 saw.dx*=-1
+                 sfx(sounds.saw_p1)
+            end
             saw.dx += 0.05
-        elseif not btn(4, 0) and btn(4, 1) then
-            if(saw.dx>0) saw.dx*=-1
+        elseif not btn(4, 0) and second_button then
+            if saw.dx>0 then 
+                 saw.dx*=-1
+                 sfx(sounds.saw_p2)
+            end
             saw.dx -= 0.05
-        elseif btn(4, 0) and btn(4, 1) then
+        elseif btn(4, 0) and second_button then
             saw.dx-=0.3*saw.dx
         end
         saw.p += vec(saw.dx*0.1,-saw.dx*saw.dx*0.0001)
@@ -309,7 +348,6 @@ _init = function ()
     saw,big_tree = create_saw(),create_tree()
     moon = create_moon()
     go_iso ={player = create_player(122*8,5*8,76,20)}
-    go_iso.player2 = create_player(123*8,5*8,108,20,1)
     tree_positions = {}
     wood_positions ={}
     bird = create_bird()
@@ -341,7 +379,11 @@ end
 _draw = function()
     cls(0)
     if mode == mode_iso then
-        camera_toplayer(go_iso.player.p + (go_iso.player2.p - go_iso.player.p)*vec(0.5,0.5) )
+        if single_player_mode then
+            camera_toplayer(go_iso.player.p)
+        else
+            camera_toplayer(go_iso.player.p + (go_iso.player2.p - go_iso.player.p)*vec(0.5,0.5) )
+        end
         map(0,0,0,0)
 
         foreach_go(wood_positions,draw)
@@ -427,7 +469,11 @@ end
 
 player_at_same_tree = function ()
     if contains_tree(tree_positions, go_iso.player.tree) then
-        return go_iso.player.tree.x == go_iso.player2.tree.x and go_iso.player.tree.y == go_iso.player2.tree.y
+        if single_player_mode then
+            return btn(5,0)
+        else
+            return go_iso.player.tree.x == go_iso.player2.tree.x and go_iso.player.tree.y == go_iso.player2.tree.y
+        end
     end
     return false
 end
@@ -450,7 +496,13 @@ _update = function()
         end
     elseif mode == mode_start then
         moon:update()
-        if btnp(4,0) or btnp(4,1) then
+        if btnp(4,0) then
+            mode = mode_iso
+            music(24)
+            pal(11,0)
+        elseif  btnp(4,1) then
+            go_iso.player2 = create_player(123*8,5*8,108,20,1)
+            single_player_mode = false
             mode = mode_iso
             music(24)
             pal(11,0)
