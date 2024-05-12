@@ -8,6 +8,7 @@ color={text=0}
 mode_2d_saw=0
 mode_2d_falling=1
 mode_iso=2
+mode_start=3
 eq = function (a,b)
     return (a-b)*(a-b) < 0.00001
 end
@@ -42,6 +43,20 @@ create_ui_text = function(name,text,pos)
         print(ui.text,ui.p.x,ui.p.y,color.text)
     end
     g_ui[name]=ui
+end
+
+create_moon = function ()
+    local m = {}
+    m.a = 0.1
+    m.update = function ()
+        m.a +=0.0005
+        if(m.a > 0.4)m.a =0.1
+    end
+
+    m.draw = function ()
+        spr(160, 64+ 120*cos(m.a) ,128+120*sin(m.a),2,2)
+    end
+    return m
 end
 
 -->8
@@ -262,14 +277,19 @@ end
 -->8
 --init
 _init = function ()
+    pal(11,0)
     srand(time)
-    mode = mode_iso
+    mode = mode_start
     saw,big_tree = create_saw(),create_tree()
-
+    moon = create_moon()
     go_iso ={player = create_player(122*8,5*8,76,20)}
     go_iso.player2 = create_player(123*8,5*8,108,20,1)
     tree_positions = {}
     wood_positions ={}
+
+    --for debug !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    add(wood_positions, create_wood(vec(122*8,9*8) , sprites.wood_cutted))
+
     -- map x93 y 0  -> 127 / 20
     for y = 0,20 do 
         for x = 93, 127 do 
@@ -304,7 +324,7 @@ _draw = function()
 
         foreach_go(go_iso,draw)
         --iso_tree
-        pal(11,0)
+       
         foreach(tree_positions,function(v)
             if(not v.empty) spr(sprites.iso_tree,v.p.x*8,(v.p.y-1)*8)
         end) 
@@ -314,6 +334,13 @@ _draw = function()
 
         foreach_go(g_ui,draw)
         camera(0,0)
+    elseif mode == mode_start then
+        camera(25*8,0)
+        map(0,0,0,0)
+        camera(0,0)
+        spr(136,46,64-17,5,3)
+        moon:draw()
+        
     else
         map(0,0,0,0,16,16)
         big_tree:draw() 
@@ -390,6 +417,12 @@ _update = function()
             add(wood_positions, create_wood((go_iso.player.tree +vec(rnd(4)-3,rnd(4)-3))* vec(8,8), sprites.wood))
             mode = mode_2d_saw 
         end
+    elseif mode == mode_start then
+        moon:update()
+        if btnp(4,0) or btnp(4,1) then
+            mode = mode_iso
+        end
+
     elseif mode == mode_2d_falling then
         if big_tree.a<0.25 then 
             big_tree.a+=0.001
