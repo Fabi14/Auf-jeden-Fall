@@ -289,7 +289,7 @@ _init = function ()
     go_iso.player2 = create_player(123*8,5*8,108,20,1)
     tree_positions = {}
     wood_positions ={}
-
+    music(20)
     -- map x93 y 0  -> 127 / 20
     for y = 0,20 do 
         for x = 93, 127 do 
