@@ -47,14 +47,20 @@ end
 
 create_moon = function ()
     local m = {}
-    m.a = 0.1
+    m.a = 0.15
+    m.time_text = 0
     m.update = function ()
         m.a +=0.0005
-        if(m.a > 0.4)m.a =0.1
+        if(m.a > 0.38)m.a =0.15
+
+        m.time_text +=0.1
+        if(m.time_text > 2)m.time_text =0
     end
 
     m.draw = function ()
         spr(160, 64+ 120*cos(m.a) ,128+120*sin(m.a),2,2)
+
+        if(m.time_text<1) spr(184,50,128-24,4,1)
     end
     return m
 end
@@ -83,7 +89,6 @@ create_wood = function (v,sprite)
     w.has_special_animation = true
     w.is_burning = false
     w.update = function ()
-        debug = w.p.x .." / ".. w.p.y
         if w.is_burning then
             w.transforming +=0.1
             if(w.transforming >3 )w.transforming = 0
@@ -135,8 +140,8 @@ end
 
 map_collide = function (p1,p2,p)
     c=function (flag)
-        if ((fget(mget(p1.x/8,p1.y/8))&flag)==flag) return true,vec(flr(p1.x/8),flr(p1.y/8)) 
-        if((fget(mget(p2.x/8,p2.y/8))&flag)==flag) return true,vec(flr(p2.x/8),flr(p2.y/8))
+        if ((fget(mget(p1.x/8,p1.y/8+1))&flag)==flag) return true,vec(flr(p1.x/8),flr(p1.y/8+1)) 
+        if((fget(mget(p2.x/8,p2.y/8+1))&flag)==flag) return true,vec(flr(p2.x/8),flr(p2.y/8+1))
         return false,p.tree
     end
     is_at_tree,ptree = c(2)
@@ -173,11 +178,9 @@ create_player = function (x,y,sprite,t,p_nr)
     p.carrys_wood_sprite = 0
     p.has_special_animation= true
     p.draw_special_animation = function (player)
-        -- debug = "draw_special_animation wood?"
         if player.carrys_wood then
             spr(player.s+(player.timer>player.timer_max*0.5 and 2 or 0),player.p.x,player.p.y,2,2)
             spr(p.carrys_wood_sprite,player.p.x,player.p.y+6)
-            -- debug = debug.."ja"
         else
             spr(player.s+(player.timer>player.timer_max*0.5 and 2 or 0),player.p.x,player.p.y,2,2)
         end
@@ -287,9 +290,6 @@ _init = function ()
     tree_positions = {}
     wood_positions ={}
 
-    --for debug !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    add(wood_positions, create_wood(vec(122*8,9*8) , sprites.wood_cutted))
-
     -- map x93 y 0  -> 127 / 20
     for y = 0,20 do 
         for x = 93, 127 do 
@@ -340,7 +340,7 @@ _draw = function()
         camera(0,0)
         spr(136,46,64-17,5,3)
         moon:draw()
-        
+
     else
         map(0,0,0,0,16,16)
         big_tree:draw() 
@@ -415,6 +415,7 @@ _update = function()
             add(wood_positions, create_wood((go_iso.player.tree +vec(rnd(4)-3,rnd(4)-3)) * vec(8,8), sprites.wood))
             add(wood_positions, create_wood((go_iso.player.tree +vec(rnd(4)-3,rnd(4)-3))* vec(8,8), sprites.wood))
             add(wood_positions, create_wood((go_iso.player.tree +vec(rnd(4)-3,rnd(4)-3))* vec(8,8), sprites.wood))
+            saw.p = vec(64,108) -- reset saw
             mode = mode_2d_saw 
         end
     elseif mode == mode_start then
