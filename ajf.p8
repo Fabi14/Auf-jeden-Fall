@@ -267,7 +267,10 @@ create_saw = function()
             saw.p.x =78
             saw.dx = 0
         end
-        if(saw.p.y <102)mode = mode_2d_falling
+        if saw.p.y <102 then 
+            mode = mode_2d_falling
+            music(8)
+        end
 
     end
     return saw
@@ -443,11 +446,13 @@ _update = function()
             add(wood_positions, create_wood((go_iso.player.tree +vec(rnd(4)-3,rnd(4)-3))* vec(8,8), sprites.wood))
             saw.p = vec(64,108) -- reset saw
             mode = mode_2d_saw 
+            music(1)
         end
     elseif mode == mode_start then
         moon:update()
         if btnp(4,0) or btnp(4,1) then
             mode = mode_iso
+            music(24)
             pal(11,0)
         end
 
@@ -457,6 +462,7 @@ _update = function()
         else
             mode = mode_iso 
             big_tree.a=0
+            music(24)
         end
     end
 end
