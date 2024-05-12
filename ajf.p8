@@ -66,15 +66,27 @@ create_wood = function (v,sprite)
     local w = create_game_object(v.x,v.y,sprite)
     w.transforming = 0
     w.has_special_animation = true
+    w.is_burning = false
     w.update = function ()
         debug = w.p.x .." / ".. w.p.y
-        if w.p.x < 99*8 and w.p.y > 105 then 
+        if w.is_burning then
+            w.transforming +=0.1
+            if(w.transforming >3 )w.transforming = 0
+        else
+        if w.p.x < 99*8 and w.p.y > 105 then -- saegewerk
             w.transforming +=0.1
         end
         if (w.transforming >5) w.s = sprites.wood_cutted
+        if w.p.x > 120*8 and w.p.y < 6*8 and w.s ==  sprites.wood_cutted then -- haus
+            w.is_burning = true
+        end
+
+    end
     end
     w.draw_special_animation = function ()
-        
+        if w.is_burning then
+            spr(194+(w.transforming>2 and 2 or w.transforming>1 and 1 or 0),123*8+3,8)
+        else
         spr(w.s,w.p.x,w.p.y)
         if(w.transforming >0) then 
             
@@ -98,6 +110,7 @@ create_wood = function (v,sprite)
             spr(123 ,w.p.x,w.p.y)
                 return
         end
+    end
     end
         
     end
