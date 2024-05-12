@@ -8,6 +8,10 @@ color={text=8}
 mode_2d_saw=0
 mode_2d_falling=1
 mode_iso=2
+eq = function (a,b)
+    return (a-b)*(a-b) < 0.00001
+end
+
 vec = function(x,y)
     local v ={}
     v.x=x or 0
@@ -15,10 +19,16 @@ vec = function(x,y)
     mt ={__add = function (a,b)
         return vec(a.x+b.x,a.y+b.y)
     end,
+    __sub = function (a,b)
+        return vec(a.x-b.x,a.y-b.y)
+    end,
+    __mul = function (a,b)
+        return vec(a.x*b.x,a.y*b.y)
+    end,
     __eq = function (a,b)
-        return a.x==b.x and a.y==b.y
+        return eq(a.x,b.x) and eq(a.y,b.y)
     end
-}
+    }
     setmetatable(v,mt)
     return v
 end
@@ -53,26 +63,34 @@ map_collide = function (p1,p2,p)
         if((fget(mget(p2.x/8,p2.y/8))&flag)==flag) return true,vec(flr(p2.x/8),flr(p2.y/8))
         return false,p.tree
     end
-    is_at_tree,p.tree = c(2)
-    debug = p.tree
+    is_at_tree,ptree = c(2)
     if c(1) then
         sfx(0)
         return true    
     elseif is_at_tree then
        create_ui_text("p_wait"..p.nr,"waiting for player",p1+vec(8,0)) 
+       p.tree = ptree
     --    mode = mode_2d_saw 
        return false
     end 
     create_ui_text("p_wait"..p.nr,"",p1) 
+    p.tree = vec(p.nr,p.nr)
     return false
 end
 
+
+
 create_player = function (x,y,sprite,t,p_nr)
+    local stand_on_wood = function (pos)
+        return contains(wood_positions,pos)
+    end
+
     local p =create_game_object(x,y,sprite,t)
     p.nr = p_nr or 0
     p.tree=vec(p_nr,p_nr)
+    p.carrys_wood = false
     p.update = function ()
-        if(btn(0,p.nr)and not map_collide(p.p + vec(-1,0),p.p + vec(-1,7),p)) p.p.x -=1
+        if(btn(0,p.nr) and not map_collide(p.p + vec(-1,0),p.p + vec(-1,7),p)) p.p.x -=1
         if(btn(1,p.nr) and not map_collide(p.p+ vec(8,0),p.p+ vec(8,7),p)) p.p.x +=1
         if(btn(2,p.nr) and not map_collide(p.p+ vec(0,-1),p.p+ vec(7,-1),p)) p.p.y -=1
         if(btn(3,p.nr) and not map_collide(p.p+ vec(0,8),p.p+ vec(7,8),p)) p.p.y +=1
@@ -80,17 +98,23 @@ create_player = function (x,y,sprite,t,p_nr)
             p.timer+=1
             p.timer = p.timer>p.timer_max and 0 or p.timer
         end
+        
+        if btn(4) and stand_on_wood(vec(flr(p.p.x/8),flr(p.p.y/8))) and not p.carrys_wood then
+            del(wood_positions,vec(flr(p.p.x/8),flr(p.p.y/8)))
+            p.carrys_wood = true
+        end
+    
     end
     return p
 end
 
-camera_toPlayer = function(player)
-    luc = player.p + vec(-64,-64)
+camera_toplayer = function(player)
+    luc = player + vec(-64,-64)
     local x = luc.x>93*8 and luc.x or 93*8
     local x = x<128*8-128 and x or 128*8-128
     local y = luc.y>0 and luc.y or 0
     local y = y<21*8-128 and y or 21*8-128
-    camera(x ,y)
+    camera(flr(x+0.5), flr(y+0.5))
 end
 
 -->8
@@ -101,27 +125,24 @@ create_saw = function()
         spr(1,saw.p.x - 4*8, saw.p.y - 8, 8, 2)
     end
     saw.update = function (saw)
-        mode = mode_2d_falling
-        return
-
-        -- if btn(4, 0) and not btn(4, 1) then
-        --     if(saw.dx<0) saw.dx*=-1
-        --     saw.dx += 0.05
-        -- elseif not btn(4, 0) and btn(4, 1) then
-        --     if(saw.dx>0) saw.dx*=-1
-        --     saw.dx -= 0.05
-        -- elseif btn(4, 0) and btn(4, 1) then
-        --     saw.dx-=0.3*saw.dx
-        -- end
-        -- saw.p += vec(saw.dx*0.1,-saw.dx*saw.dx*0.0001)
-        -- if saw.p.x < 50 then
-        --     saw.p.x =50
-        --     saw.dx = 0
-        -- elseif saw.p.x >78 then
-        --     saw.p.x =78
-        --     saw.dx = 0
-        -- end
-        -- if(saw.p.y <102)mode = mode_2d_falling
+        if btn(4, 0) and not btn(4, 1) then
+            if(saw.dx<0) saw.dx*=-1
+            saw.dx += 0.05
+        elseif not btn(4, 0) and btn(4, 1) then
+            if(saw.dx>0) saw.dx*=-1
+            saw.dx -= 0.05
+        elseif btn(4, 0) and btn(4, 1) then
+            saw.dx-=0.3*saw.dx
+        end
+        saw.p += vec(saw.dx*0.1,-saw.dx*saw.dx*0.0001)
+        if saw.p.x < 50 then
+            saw.p.x =50
+            saw.dx = 0
+        elseif saw.p.x >78 then
+            saw.p.x =78
+            saw.dx = 0
+        end
+        if(saw.p.y <102)mode = mode_2d_falling
 
     end
     return saw
@@ -156,7 +177,7 @@ end
 _init = function ()
     srand(time)
     mode = mode_iso
-    saw,tree = create_saw(),create_tree()
+    saw,big_tree = create_saw(),create_tree()
 
     go_iso ={player = create_player(122*8,5*8,68,20)}
     go_iso.player2 = create_player(123*8,5*8,84,20,1)
@@ -166,7 +187,7 @@ _init = function ()
     for y = 0,20 do 
         for x = 93, 127 do 
             if mget(x,y) == 88 then
-                add(tree_positions,vec(x,y))
+                add(tree_positions,{p=vec(x,y),empty=false})
             end
         end
     end
@@ -189,16 +210,18 @@ end
 _draw = function()
     cls(0)
     if mode == mode_iso then
-        camera_toPlayer(go_iso.player)
+        camera_toplayer(go_iso.player.p + (go_iso.player2.p - go_iso.player.p)*vec(0.5,0.5) )
         map(0,0,0,0)
+
+        foreach(wood_positions,function(v)
+            spr(sprites.wood,v.x*8,(v.y-1)*8)
+        end) 
+
         foreach_go(go_iso,draw)
         --iso_tree
         pal(11,0)
         foreach(tree_positions,function(v)
-            spr(sprites.iso_tree,v.x*8,(v.y-1)*8)
-        end) 
-        foreach(wood_positions,function(v)
-            spr(sprites.wood,v.x*8,(v.y-1)*8)
+            if(not v.empty) spr(sprites.iso_tree,v.p.x*8,(v.p.y-1)*8)
         end) 
         --iso haus
         spr(192,122*8,2*8)
@@ -208,9 +231,9 @@ _draw = function()
         camera(0,0)
     else
         map(0,0,0,0,16,16)
-        tree:draw() 
+        big_tree:draw() 
         saw:draw()
-        if mode == mode_2d_saw then
+        if mode == mode_2d_saw then -- runder Abschnitt れもber Sれさge
             spr(62,56,95)
             spr(63,64,95)
         end
@@ -221,15 +244,26 @@ _draw = function()
 end
 -->8
 --update
-contains = function (tbl,val)
-    for _, v in pairs(tbl) do 
-       if v.x == val.x and v.y == val.y then return true end
+contains_tree = function (val)
+    for _, v in pairs(tree_positions) do 
+       if v.p.x == val.x and v.p.y == val.y and v.empty ==false then
+         return true 
+        end
+    end
+    return false    
+end
+
+del_tree = function (val)
+    for i, v in pairs(tree_positions) do 
+       if v.p.x == val.x and v.p.y == val.y then
+            tree_positions[i].empty = true
+        end
     end
     return false    
 end
 
 player_at_same_tree = function ()
-    if contains(tree_positions, go_iso.player.tree) then
+    if contains_tree( go_iso.player.tree) then
         return go_iso.player.tree.x == go_iso.player2.tree.x and go_iso.player.tree.y == go_iso.player2.tree.y
     end
     return false
@@ -238,23 +272,26 @@ end
 _update = function()
     if mode == mode_2d_saw then
         saw:update()
-    elseif mode == mode_2d_falling then
-        if tree.a<0.25 then 
-            tree.a+=0.001
-        else
-            mode = mode_iso 
-            tree.a=0
-        end
     elseif mode == mode_iso then
         foreach_go(go_iso,update)
-        if go_iso.player.tree.x == go_iso.player2.tree.x and go_iso.player.tree.y == go_iso.player2.tree.y then
-           mode = mode_2d_saw 
-            del(tree_positions, go_iso.player.tree)
-            add(wood_positions,go_iso.player.tree +vec(rnd(6)-3,rnd(6)-3))
-            add(wood_positions,go_iso.player.tree +vec(rnd(6)-3,rnd(6)-3))
-            add(wood_positions,go_iso.player.tree +vec(rnd(6)-3,rnd(6)-3))
+        if player_at_same_tree() then
+            debug = "same tree !! ".. go_iso.player.tree.x .."/" ..go_iso.player.tree.y
+            del_tree( go_iso.player.tree)
+            add(wood_positions,go_iso.player.tree +vec(rnd(4)-3,rnd(4)-3))
+            add(wood_positions,go_iso.player.tree +vec(rnd(4)-3,rnd(4)-3))
+            add(wood_positions,go_iso.player.tree +vec(rnd(4)-3,rnd(4)-3))
+            mode = mode_2d_saw 
+        else
+            debug = "not same tree"
         end
-        
+    elseif mode == mode_2d_falling then
+        if big_tree.a<0.25 then 
+            big_tree.a+=0.001
+        else
+            debug = "falling"
+            mode = mode_iso 
+            big_tree.a=0
+        end
     end
 end
 
