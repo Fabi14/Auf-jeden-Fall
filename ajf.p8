@@ -199,8 +199,6 @@ create_saw = function()
         spr(1,saw.p.x - 4*8, saw.p.y - 8, 8, 2)
     end
     saw.update = function (saw)
-
-        mode = mode_2d_falling
         if btn(4, 0) and not btn(4, 1) then
             if(saw.dx<0) saw.dx*=-1
             saw.dx += 0.05
