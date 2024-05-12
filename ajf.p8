@@ -70,6 +70,23 @@ end
 
 -->8
 --iso
+
+    -- map x93 y 0  -> 127 / 20
+create_bird = function ()
+    local b = create_game_object(128*8,64,142,3)
+    b.update = function ()
+        b.p.x-=1
+        b.timer +=0.1
+        if(b.timer > b.timer_max)b.timer =0
+        if b.p.x<-90*8 then
+            b.p.x=128*8
+            b.p.y =rnd(20*8)
+        end
+    end
+    return b
+end
+
+
 create_game_object = function (x,y,sprite,t)
     local go ={p=vec(x,y),s=sprite}
     go.timer = 0
@@ -79,7 +96,7 @@ create_game_object = function (x,y,sprite,t)
         if go.has_special_animation then 
             go:draw_special_animation()
         else
-            spr(go.s+(go.timer>go.timer_max*0.5 and 1 or 0),go.p.x,go.p.y)
+            spr(go.s+(go.timer>go.timer_max*0.8 and 1 or 0),go.p.x,go.p.y)
         end
     end
     go.update = function (go) end
@@ -292,6 +309,7 @@ _init = function ()
     go_iso.player2 = create_player(123*8,5*8,108,20,1)
     tree_positions = {}
     wood_positions ={}
+    bird = create_bird()
     music(20)
     -- map x93 y 0  -> 127 / 20
     for y = 0,20 do 
@@ -336,7 +354,11 @@ _draw = function()
         spr(193,123*8,2*8)
 
         foreach_go(g_ui,draw)
+        bird:draw()
         camera(0,0)
+
+
+
     elseif mode == mode_start then
         camera(25*8,0)
         map(0,0,0,0)
@@ -413,6 +435,7 @@ _update = function()
     elseif mode == mode_iso then
         foreach_go(go_iso,update)
         foreach_go(wood_positions,update)
+        bird:update()
         if player_at_same_tree() then
             del_tree( go_iso.player.tree)
             add(wood_positions, create_wood((go_iso.player.tree +vec(rnd(4)-3,rnd(4)-3)) * vec(8,8), sprites.wood))
