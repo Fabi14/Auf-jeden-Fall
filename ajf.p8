@@ -62,21 +62,46 @@ create_game_object = function (x,y,sprite,t)
     return go
 end
 
-create_wood = function (x,y,sprite)
-    local w = create_game_object(x,y,sprite)
+create_wood = function (v,sprite)
+    local w = create_game_object(v.x,v.y,sprite)
     w.transforming = 0
-    w.has_special_animation = false
+    w.has_special_animation = true
     w.update = function ()
-        if w.p.x < 89*8 and w.p.y < 14*8 then 
+        debug = w.p.x .." / ".. w.p.y
+        if w.p.x < 99*8 and w.p.y > 105 then 
             w.transforming +=0.1
-            w.has_special_animation = true
         end
-        if (w.transforming >1) w.s = sprites.wood_cutted
+        if (w.transforming >5) w.s = sprites.wood_cutted
     end
     w.draw_special_animation = function ()
-        spr(go.s+(go.timer>go.timer_max*0.5 and 1 or 0),go.p.x,go.p.y)
+        
+        spr(w.s,w.p.x,w.p.y)
+        if(w.transforming >0) then 
+            
+        if w.transforming <1 then
+            spr(106 ,w.p.x,w.p.y)
+            return
+        end
+        if w.transforming <2 then
+            spr(107 ,w.p.x,w.p.y)
+                return
+        end
+        if w.transforming <3 then
+            spr(121 ,w.p.x,w.p.y)
+            return
+        end
+        if w.transforming <4 then
+            spr(122 ,w.p.x,w.p.y)
+                return
+        end
+        if w.transforming <5 then
+            spr(123 ,w.p.x,w.p.y)
+                return
+        end
     end
-
+        
+    end
+    return w
 end
 
 
@@ -108,8 +133,8 @@ end
 create_player = function (x,y,sprite,t,p_nr)
     local stand_on_wood = function (pos)
         return find(wood_positions,pos,function(wood,player)
-            local dist_square = len_sqr(wood - player)
-            return dist_square<4
+            local dist_square = len_sqr(wood.p - player)
+            return dist_square<32
         end)
     end
 
@@ -117,6 +142,7 @@ create_player = function (x,y,sprite,t,p_nr)
     p.nr = p_nr or 0
     p.tree=vec(p_nr,p_nr)
     p.carrys_wood = false
+    p.carrys_wood_sprite = 0
     p.has_special_animation= true
     p.draw_special_animation = function (player)
         -- debug = "draw_special_animation wood?"
@@ -140,13 +166,14 @@ create_player = function (x,y,sprite,t,p_nr)
         end
         
 
-        local wood_index = stand_on_wood(vec(p.p.x/8,p.p.y/8))
+        local wood_index = stand_on_wood(vec(p.p.x,p.p.y))
         if btnp(4,p.nr) then 
             if wood_index and not p.carrys_wood then
                 del(wood_positions,wood_index)
                 p.carrys_wood = true
+                p.carrys_wood_sprite = wood_index.s
             elseif p.carrys_wood then
-                add(wood_positions,vec(p.p.x/8,p.p.y/8))
+                add(wood_positions,create_wood(vec(p.p.x,p.p.y),p.carrys_wood_sprite ))
                 p.carrys_wood = false
             end
         end
@@ -174,24 +201,24 @@ create_saw = function()
     saw.update = function (saw)
 
         mode = mode_2d_falling
-        -- if btn(4, 0) and not btn(4, 1) then
-        --     if(saw.dx<0) saw.dx*=-1
-        --     saw.dx += 0.05
-        -- elseif not btn(4, 0) and btn(4, 1) then
-        --     if(saw.dx>0) saw.dx*=-1
-        --     saw.dx -= 0.05
-        -- elseif btn(4, 0) and btn(4, 1) then
-        --     saw.dx-=0.3*saw.dx
-        -- end
-        -- saw.p += vec(saw.dx*0.1,-saw.dx*saw.dx*0.0001)
-        -- if saw.p.x < 50 then
-        --     saw.p.x =50
-        --     saw.dx = 0
-        -- elseif saw.p.x >78 then
-        --     saw.p.x =78
-        --     saw.dx = 0
-        -- end
-        -- if(saw.p.y <102)mode = mode_2d_falling
+        if btn(4, 0) and not btn(4, 1) then
+            if(saw.dx<0) saw.dx*=-1
+            saw.dx += 0.05
+        elseif not btn(4, 0) and btn(4, 1) then
+            if(saw.dx>0) saw.dx*=-1
+            saw.dx -= 0.05
+        elseif btn(4, 0) and btn(4, 1) then
+            saw.dx-=0.3*saw.dx
+        end
+        saw.p += vec(saw.dx*0.1,-saw.dx*saw.dx*0.0001)
+        if saw.p.x < 50 then
+            saw.p.x =50
+            saw.dx = 0
+        elseif saw.p.x >78 then
+            saw.p.x =78
+            saw.dx = 0
+        end
+        if(saw.p.y <102)mode = mode_2d_falling
 
     end
     return saw
@@ -262,9 +289,7 @@ _draw = function()
         camera_toplayer(go_iso.player.p + (go_iso.player2.p - go_iso.player.p)*vec(0.5,0.5) )
         map(0,0,0,0)
 
-        foreach(wood_positions,function(v)
-            spr(sprites.wood,v.x*8,(v.y-1)*8)
-        end) 
+        foreach_go(wood_positions,draw)
 
         foreach_go(go_iso,draw)
         --iso_tree
@@ -288,7 +313,7 @@ _draw = function()
         end
     end
 
-    print(debug,0,0,8)
+    -- print(debug,0,0,8)
 end
 -->8
 --update
@@ -346,20 +371,21 @@ _update = function()
         saw:update()
     elseif mode == mode_iso then
         foreach_go(go_iso,update)
+        foreach_go(wood_positions,update)
         if player_at_same_tree() then
             del_tree( go_iso.player.tree)
-            add(wood_positions,go_iso.player.tree +vec(rnd(4)-3,rnd(4)-3))
-            add(wood_positions,go_iso.player.tree +vec(rnd(4)-3,rnd(4)-3))
-            add(wood_positions,go_iso.player.tree +vec(rnd(4)-3,rnd(4)-3))
+            add(wood_positions, create_wood((go_iso.player.tree +vec(rnd(4)-3,rnd(4)-3)) * vec(8,8), sprites.wood))
+            add(wood_positions, create_wood((go_iso.player.tree +vec(rnd(4)-3,rnd(4)-3))* vec(8,8), sprites.wood))
+            add(wood_positions, create_wood((go_iso.player.tree +vec(rnd(4)-3,rnd(4)-3))* vec(8,8), sprites.wood))
             mode = mode_2d_saw 
         end
     elseif mode == mode_2d_falling then
-        -- if big_tree.a<0.25 then 
-        --     big_tree.a+=0.001
-        -- else
+        if big_tree.a<0.25 then 
+            big_tree.a+=0.001
+        else
             mode = mode_iso 
             big_tree.a=0
-        -- end
+        end
     end
 end
 
