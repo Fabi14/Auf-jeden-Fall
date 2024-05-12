@@ -49,17 +49,20 @@ create_moon = function ()
     local m = {}
     m.a = 0.15
     m.time_text = 0
+    m.color = 0
     m.update = function ()
         m.a +=0.0005
         if(m.a > 0.38)m.a =0.15
 
         m.time_text +=0.1
+        m.color +=0.5
         if(m.time_text > 2)m.time_text =0
+        if(m.color > 16)m.time_text =0
     end
 
     m.draw = function ()
         spr(160, 64+ 120*cos(m.a) ,128+120*sin(m.a),2,2)
-
+        pal(11, m.color)
         if(m.time_text<1) spr(184,50,128-24,4,1)
     end
     return m
@@ -422,6 +425,7 @@ _update = function()
         moon:update()
         if btnp(4,0) or btnp(4,1) then
             mode = mode_iso
+            pal(11,0)
         end
 
     elseif mode == mode_2d_falling then
