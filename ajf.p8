@@ -2,7 +2,7 @@ pico-8 cartridge // http://www.pico-8.com
 version 42
 __lua__
 debug = ""
-sprites={iso_tree =84,wood = 98,wood_small = 99}
+sprites={iso_tree =84,tree_pos = 100,wood = 98,wood_small = 99}
 color={text=8}
 
 mode_2d_saw=0
@@ -89,9 +89,9 @@ end
 
 create_player = function (x,y,sprite,t,p_nr)
     local stand_on_wood = function (pos)
-        return contains(wood_positions,pos,function(wood,player)
+        return find(wood_positions,pos,function(wood,player)
             local dist_square = len_sqr(wood - player)
-            return dist_square<64
+            return dist_square<4
         end)
     end
 
@@ -103,7 +103,7 @@ create_player = function (x,y,sprite,t,p_nr)
     p.draw_special_animation = function (player)
         -- debug = "draw_special_animation wood?"
         if player.carrys_wood then
-            spr(101,player.p.x,player.p.y)
+            spr(99,player.p.x,player.p.y)
             -- debug = debug.."ja"
         else
             spr(player.s+(player.timer>player.timer_max*0.5 and 1 or 0),player.p.x,player.p.y)
@@ -119,14 +119,17 @@ create_player = function (x,y,sprite,t,p_nr)
             p.timer+=1
             p.timer = p.timer>p.timer_max and 0 or p.timer
         end
-
-        if stand_on_wood(vec(flr(p.p.x/8),flr(p.p.y/8)))then 
-            debug = "on wood"
-        end
         
-        if btn(4,p.nr) and stand_on_wood(vec(flr(p.p.x/8),flr(p.p.y/8))) and not p.carrys_wood then
-            del(wood_positions,vec(flr(p.p.x/8),flr(p.p.y/8)))
-            p.carrys_wood = true
+
+        local wood_index = stand_on_wood(vec(p.p.x/8,p.p.y/8))
+        if btnp(4,p.nr) then 
+            if wood_index and not p.carrys_wood then
+                del(wood_positions,wood_index)
+                p.carrys_wood = true
+            elseif p.carrys_wood then
+                add(wood_positions,vec(p.p.x/8,p.p.y/8))
+                p.carrys_wood = false
+            end
         end
     
     end
@@ -213,7 +216,7 @@ _init = function ()
     -- map x93 y 0  -> 127 / 20
     for y = 0,20 do 
         for x = 93, 127 do 
-            if mget(x,y) == 88 then
+            if mget(x,y) == sprites.tree_pos then
                 add(tree_positions,{p=vec(x,y),empty=false})
             end
         end
@@ -282,6 +285,18 @@ contains = function (tbl,val,f)
     return false    
 end
 
+find = function (tbl,val,f)
+    test_fuc = f or function (a,b)
+        return a.x == b.x and a.y == b.y
+    end
+    for _, v in pairs(tbl) do 
+       if test_fuc(v,val) then
+         return v 
+        end
+    end
+    return nil   
+end
+
 contains_tree = function (tbl,val)
     for _, v in pairs(tbl) do 
        if v.p.x == val.x and v.p.y == val.y and v.empty ==false then
@@ -320,12 +335,12 @@ _update = function()
             mode = mode_2d_saw 
         end
     elseif mode == mode_2d_falling then
-        if big_tree.a<0.25 then 
-            big_tree.a+=0.001
-        else
+        -- if big_tree.a<0.25 then 
+        --     big_tree.a+=0.001
+        -- else
             mode = mode_iso 
             big_tree.a=0
-        end
+        -- end
     end
 end
 
