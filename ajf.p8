@@ -2,7 +2,7 @@ pico-8 cartridge // http://www.pico-8.com
 version 42
 __lua__
 debug = ""
-sprites={iso_tree =84,tree_pos = 100,wood = 98,wood_small = 99}
+sprites={iso_tree =84,tree_pos = 100,wood = 98,wood_small = 99,wood_cutted =99}
 color={text=8}
 
 mode_2d_saw=0
@@ -62,6 +62,24 @@ create_game_object = function (x,y,sprite,t)
     return go
 end
 
+create_wood = function (x,y,sprite)
+    local w = create_game_object(x,y,sprite)
+    w.transforming = 0
+    w.has_special_animation = false
+    w.update = function ()
+        if w.p.x < 89*8 and w.p.y < 14*8 then 
+            w.transforming +=0.1
+            w.has_special_animation = true
+        end
+        if (w.transforming >1) w.s = sprites.wood_cutted
+    end
+    w.draw_special_animation = function ()
+        spr(go.s+(go.timer>go.timer_max*0.5 and 1 or 0),go.p.x,go.p.y)
+    end
+
+end
+
+
 map_collide = function (p1,p2,p)
     c=function (flag)
         if ((fget(mget(p1.x/8,p1.y/8))&flag)==flag) return true,vec(flr(p1.x/8),flr(p1.y/8)) 
@@ -103,10 +121,11 @@ create_player = function (x,y,sprite,t,p_nr)
     p.draw_special_animation = function (player)
         -- debug = "draw_special_animation wood?"
         if player.carrys_wood then
-            spr(99,player.p.x,player.p.y)
+            spr(player.s+(player.timer>player.timer_max*0.5 and 2 or 0),player.p.x,player.p.y,2,2)
+            spr(99,player.p.x,player.p.y+6)
             -- debug = debug.."ja"
         else
-            spr(player.s+(player.timer>player.timer_max*0.5 and 1 or 0),player.p.x,player.p.y)
+            spr(player.s+(player.timer>player.timer_max*0.5 and 2 or 0),player.p.x,player.p.y,2,2)
         end
     end
 
@@ -209,8 +228,8 @@ _init = function ()
     mode = mode_iso
     saw,big_tree = create_saw(),create_tree()
 
-    go_iso ={player = create_player(122*8,5*8,66,20)}
-    go_iso.player2 = create_player(123*8,5*8,82,20,1)
+    go_iso ={player = create_player(122*8,5*8,76,20)}
+    go_iso.player2 = create_player(123*8,5*8,76,20,1)
     tree_positions = {}
     wood_positions ={}
     -- map x93 y 0  -> 127 / 20
