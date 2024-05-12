@@ -3,7 +3,7 @@ version 42
 __lua__
 debug = ""
 sprites={iso_tree =84,tree_pos = 100,wood = 98,wood_small = 99,wood_cutted =104}
-color={text=8}
+color={text=0}
 
 mode_2d_saw=0
 mode_2d_falling=1
@@ -129,7 +129,7 @@ map_collide = function (p1,p2,p)
         sfx(0)
         return true    
     elseif is_at_tree then
-       create_ui_text("p_wait"..p.nr,"waiting for player",p1+vec(8,0)) 
+       create_ui_text("p_wait"..p.nr,"waiting..",p1+vec(16,0)) 
        p.tree = ptree
     --    mode = mode_2d_saw 
        return false
